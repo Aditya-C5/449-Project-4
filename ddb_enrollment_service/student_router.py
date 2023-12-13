@@ -142,11 +142,7 @@ def enroll(class_id: Annotated[int, Body(embed=True)],
             print(f"Added student {student_id} to waitlist for class {class_id}")
             return {"message": "Added to waitlist"}
             #raise HTTPException(status_code=200, detail="Added to waitlist")
-
-        '''else:
-             raise HTTPException(status_code=400, detail="No available seats in the class.")'''
-        
-    
+           
     except botocore.exceptions.ClientError as e:
         print(f"Botocore Client Error: {e}")
         raise HTTPException(status_code=500, detail=f"Botocore Client Error: {e}")
@@ -155,8 +151,6 @@ def enroll(class_id: Annotated[int, Body(embed=True)],
         print(f"Error during enrollment process: {e}")
         raise HTTPException(status_code=500, detail=f"Error during enrollment process: {str(e)}")
     
-    '''except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving classes: {str(e)}")'''
 
 
 @student_router.delete("/enrollment/{class_id}", status_code=status.HTTP_200_OK)
@@ -231,11 +225,6 @@ def drop_class(
         if ddb_helper_instance.is_auto_enroll_enabled():        
             ddb_helper_instance.enroll_students_from_waitlist([class_id])
 
-        
-        '''# Trigger auto enrollment using the instance
-        if ddb_helper_instance.is_auto_enroll_enabled(db):        
-            ddb_helper_instance.enroll_students_from_waitlist(db, [class_id])'''
-
     except botocore.exceptions.ClientError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -302,114 +291,3 @@ def remove_from_waitlist(
 
     except redis.exceptions.RedisError as e:
         raise HTTPException(status_code=500, detail=f"Error removing from waitlist: {str(e)}")
-
-
-'''@student_router.get("/waitlist/{class_id}/position/")
-def get_current_waitlist_position(
-    class_id: int,
-    student_id: int = Header(
-        alias="x-cwid", description="A unique ID for students, instructors, and registrars")):
-    """
-    Retrieve waitlist position
-
-    Returns:
-    - dict: A dictionary containing the user's waitlist position info
-
-    Raises:
-    - HTTPException: If error occurs in retrieving position
-    """
-    try:
-        redis_conn = redis.Redis(decode_responses=True)
-        waitlist_key_to_check = f"waitlist_{class_id}_{student_id}"
-
-        # Get the rank of the student in the waitlist
-        waitlist_position = redis_conn.zrank(waitlist_key_to_check, student_id)
-
-        if waitlist_position is not None:
-            waitlist_position += 1  # Adjust for zero-based index
-            return {"class_id": class_id, "waitlist_position": waitlist_position}
-        else:
-            message = f"You are not in the waitlist for class {class_id}"
-            return {"class_id": class_id, "message": message}
-
-    except redis.exceptions.RedisError as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving waitlist position: {str(e)}")'''
-
-'''@student_router.delete("/waitlist/{class_id}/", status_code=status.HTTP_200_OK)
-def remove_from_waitlist(
-    class_id: int,
-    student_id: int = Header(
-        alias="x-cwid", description="A unique ID for students, instructors, and registrars"
-    )
-):
-    """
-    Remove a student from the waitlist
-
-    Returns:
-    - dict: A message indicating successful removal
-
-    Raises:
-    - HTTPException: If student is not found on the waitlist
-    """
-    try:
-        redis_conn = redis.Redis(decode_responses=True)
-        waitlist_key = f"waitlist_{class_id}_{student_id}"
-
-        if not redis_conn.zrem(waitlist_key, student_id):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Record Not Found in Redis"
-            )
-
-        return {"detail": "Item deleted successfully"}
-
-    except redis.exceptions.RedisError as e:
-        raise HTTPException(status_code=500, detail=f"Error removing from waitlist: {str(e)}")'''
-
-'''@student_router.get("/waitlist/{class_id}/position/")
-def get_current_waitlist_position(
-    class_id:int,
-    student_id: int = Header(
-        alias="x-cwid", description="A unique ID for students, instructors, and registrars")):
-    """
-    Retreive waitlist position
-
-    Returns:
-    - dict: A dictionary containing the user's waitlist position info
-
-    Raises:
-
-    """
-    try:
-        redis_conn = redis.Redis(decode_responses=True)
-        waitlist_key_to_check = f"waitlist_{class_id}"
-
-        waitlist_position = redis_conn.zrank(waitlist_key_to_check, f"{class_id}_{student_id}")
-
-        if waitlist_position is not None:
-            waitlist_position += 1
-            return {"class_id": class_id, "waitlist_position": waitlist_position}
-        else:
-            message = f"You are not in the waitlist for class {class_id}"
-            return {"class_id": class_id, "message": message}
-
-    except redis.exceptions.RedisError as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving waitlist position: {str(e)}")
-    
-@student_router.delete("/waitlist/{class_id}/", status_code=status.HTTP_200_OK)
-def remove_from_waitlist(
-    class_id: int,
-    student_id: int = Header(
-        alias="x-cwid", description="A unique ID for students, instructors, and registrars"
-    )
-):
-    # Remove student from Redis waitlist
-    waitlist_key = f"waitlist_{class_id}"
-    member = f"{class_id}_{student_id}"
-
-    if not redis_conn.zrem(waitlist_key, member):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Record Not Found in Redis"
-        )
-
-    return {"detail": "Item deleted successfully"}'''
-     

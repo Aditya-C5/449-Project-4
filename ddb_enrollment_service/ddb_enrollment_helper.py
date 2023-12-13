@@ -29,11 +29,6 @@ class DynamoDBRedisHelper:
         else:
             return False
 
-        '''if "Item" in response:
-            return response["Item"]["value"] == "1"
-        else:
-            return False'''
-
     
     def enroll_students_from_waitlist(self, class_id_list):
         total_enrolled_from_waitlist = 0  # Tracks total enrollments from the waitlist across all classes
@@ -79,90 +74,6 @@ class DynamoDBRedisHelper:
 
         return total_enrolled_from_waitlist
 
-    
-    
-    '''def enroll_students_from_waitlist(self, class_id_list):
-        total_enrolled_from_waitlist = 0  # Tracks total enrollments from the waitlist across all classes
-
-        for class_id in class_id_list:
-            enrollment_table = self.dynamodb_resource.Table("enrollment_table")
-            room_capacity = int(class_info.get("room_capacity", 0))
-            # Fetch current enrollment count for this class
-            current_enrollments = enrollment_table.query(
-                KeyConditionExpression=Key('class_id').eq(class_id)
-            )
-            enrollment_count = len(current_enrollments.get('Items', []))
-
-            available_spots = room_capacity - enrollment_count
-            
-            waitlist_key = f"waitlist_{class_id}"
-            waitlist_members = self.redis_conn.zrange(waitlist_key, 0, available_spots - 1)
-            #waitlist_members = self.redis_conn.zrange(waitlist_key, 0, -1)
-
-            class_table = self.dynamodb_resource.Table("class_table")
-            class_info = class_table.get_item(Key={"id": class_id}).get("Item", {})
-            
-
-            # Enroll students from waitlist if spots are available
-            if available_spots > 0:
-                #for waitlist_member in waitlist_members[:available_spots]:
-                for waitlist_member in waitlist_members:
-                    student_id = waitlist_member.split("_")[1]
-
-                    enrollment_table.put_item(
-                        Item={"class_id": class_id, "student_id": student_id, "enrollment_date": datetime.now().isoformat()}
-                    )
-
-                    self.redis_conn.zrem(waitlist_key, waitlist_member)
-                    total_enrolled_from_waitlist += 1
-
-        return total_enrolled_from_waitlist'''
-
-    
-    '''def enroll_students_from_waitlist(self, class_id_list):
-        enrollment_count = 0
-
-        for class_id in class_id_list:
-            enrollment_table = self.dynamodb_resource.Table("enrollment_table")
-            waitlist_key = f"waitlist_{class_id}"
-            waitlist_members = self.redis_conn.zrange(waitlist_key, 0, -1)
-
-            class_table = self.dynamodb_resource.Table("class_table")
-            class_info = class_table.get_item(Key={"id": class_id}).get("Item", {})
-            available_spots = class_info.get("room_capacity", 0) - class_info.get("enrollment_count", 0)
-
-            for waitlist_member in waitlist_members[:available_spots]:
-                student_id = waitlist_member.split("_")[1]
-
-                enrollment_table.put_item(
-                    Item={"class_id": class_id, "student_id": student_id, "enrollment_date": datetime.now().isoformat()}
-                )
-
-                self.redis_conn.zrem(waitlist_key, waitlist_member)
-
-                enrollment_count += 1
-
-        return enrollment_count'''
-
-    '''def get_available_classes_within_first_2weeks(self):
-        available_classes = []
-
-        class_table = self.dynamodb_resource.Table("class_table")
-        enrollment_table = self.dynamodb_resource.Table("enrollment_table")
-
-        response = class_table.scan()
-
-        items = response.get('Items', [])
-
-        for item in items:
-            class_id = item['id']
-            room_capacity = item['room_capacity']
-            enrollments = enrollment_table.query(KeyConditionExpression=Key('class_id').eq(class_id))
-            num_of_enrollments = len(enrollments.get('Items', []))
-            if num_of_enrollments < room_capacity:
-                available_classes.append(item)
-
-        return available_classes'''
     
     def process_waitlist(self, class_id):
         class_table = self.dynamodb_resource.Table("class_table")

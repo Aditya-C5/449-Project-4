@@ -37,16 +37,6 @@ def get_redis_client():
     return redis_conn
 
 
-
-'''def is_valid_class_id(class_id: int) -> bool:
-    try:
-        class_table = dynamodb_resource.Table("class_table")
-        response = class_table.get_item(Key={"id": class_id}) 
-        return "Item" in response
-    except ClientError as err:
-        logger.error(f"Error accessing DynamoDB: {err}")
-        return False'''
-
 def is_valid_class_id(class_id: int) -> bool:
     #dynamodb_resource = boto3.resource('dynamodb', region_name='local', endpoint_url='http://localhost:8000')
     try:
@@ -140,6 +130,33 @@ def list_subscriptions(student_id: int, redis_client: redis.Redis = Depends(get_
     # ...
 
     return {"subscriptions": subscriptions}'''
+
+@notification_router.get("/students/subscriptions/", status_code=status.HTTP_200_OK, tags=["Student"])
+def list_subscriptions(student_id: int, redis_client: redis.Redis = Depends(get_redis_client)):
+    # Pattern for matching student's subscriptions
+    pattern = f'notification_*_{student_id}_*'
+
+    # Fetch all keys matching the pattern
+    subscription_keys = redis_client.keys(pattern)
+
+    subscriptions = []
+    for key in subscription_keys:
+        # Split the key to extract course_id and subscription type
+        _, course_id, _, subscription_type = key.split('_')
+        subscription_value = redis_client.get(key)
+        subscriptions.append({
+            "course_id": course_id,
+            "type": "email" if subscription_type == "email" else "webhook",
+            "value": subscription_value
+        })
+
+    if not subscriptions:
+        return {"message": "No subscriptions found for the student."}
+
+    return {"subscriptions": subscriptions}
+
+
+
 
 @notification_router.delete("/students/unsubscribe/", status_code=status.HTTP_200_OK, tags=["Student"])
 def unsubscribe_from_course(

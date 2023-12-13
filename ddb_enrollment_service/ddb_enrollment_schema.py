@@ -412,9 +412,6 @@ def create_table_instance(class_type, table_name):
 
     return table_manager.table
     
-    '''table_manager = class_type(dynamodb_resource)
-    table_manager.table = table_manager.dyn_resource.Table(table_name)
-    return table_manager.table'''
 
 def create_table(class_type, table_name): 
     dynamodb_resource = boto3.resource(
