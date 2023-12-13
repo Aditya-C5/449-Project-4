@@ -1,0 +1,486 @@
+{
+  "$schema": "https://www.krakend.io/schema/v2.4/krakend.json",
+  "version": 3,
+  "endpoints": [
+    {
+      "endpoint": "/api/login/",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/login/",
+          "host": ["http://localhost:5200"],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/signer": {
+          "alg": "RS256",
+          "kid": "access-token-key",
+          "keys_to_sign": ["access_token", "refresh_token"],
+          "jwk_local_path": "./etc/private_key.json",
+          "disable_jwk_security": true
+        }
+      }
+    },
+    {
+      "endpoint": "/api/register/",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/register/",
+          "host": ["http://localhost:5200"],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "Registrar 1: Set auto enrollment",
+      "endpoint": "/api/auto-enrollment/",
+      "method": "PUT",
+      "backend": [
+        {
+          "url_pattern": "/auto-enrollment/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Registrar"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true
+        }
+      }
+    },
+    {
+      "_comment": "Registrar 2: Creates a new course with the provided details.",
+      "endpoint": "/api/courses/",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/courses/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Registrar"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true
+        }
+      }
+    },
+    {
+      "_comment": "Registrar 3: Creates a new class.",
+      "endpoint": "/api/classes/",
+      "method": "POST",
+      "backend": [
+        {
+          "url_pattern": "/classes/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Registrar"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true
+        }
+      }
+    },
+    {
+      "_comment": "Registrar 4: Deletes a specific class.",
+      "endpoint": "/api/classes/{id}",
+      "method": "DELETE",
+      "backend": [
+        {
+          "url_pattern": "/classes/{id}",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Registrar"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true
+        }
+      }
+    },
+    {
+      "_comment": "Registrar 5: Updates specific details of a class.",
+      "endpoint": "/api/classes/{id}",
+      "method": "PATCH",
+      "backend": [
+        {
+          "url_pattern": "/classes/{id}",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Registrar"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true
+        }
+      }
+    },
+    {
+      "_comment": "Student 1: Retreive all available classes.",
+      "endpoint": "/api/classes/available/",
+      "method": "GET",
+      "backend": [
+        {
+          "url_pattern": "/classes/available/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Student"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true
+        }
+      }
+    },
+    {
+      "_comment": "Student 2: Student enrolls in a class",
+      "endpoint": "/api/enrollment/",
+      "method": "POST",
+      "input_headers": ["x-cwid", "x-first-name", "x-last-name"],
+      "backend": [
+        {
+          "url_pattern": "/enrollment/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Student"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [
+            ["jti", "x-cwid"],
+            ["first_name", "x-first-name"],
+            ["last_name", "x-last-name"]
+          ]
+        }
+      }
+    },
+    {
+      "_comment": "Student 3: Student drop a class",
+      "endpoint": "/api/enrollment/{class_id}/",
+      "method": "DELETE",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/enrollment/{class_id}/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Student"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    },
+    {
+      "_comment": "Student 4: View current waitlist position",
+      "endpoint": "/api/waitlist/{class_id}/position/",
+      "method": "GET",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/waitlist/{class_id}/position/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Student"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    },
+    {
+      "_comment": "Student 5: Students remove themselves from waitlist",
+      "endpoint": "/api/waitlist/{class_id}/",
+      "method": "DELETE",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/waitlist/{class_id}/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Student"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    },
+    {
+      "_comment": "Instructor 1: Retreive current enrollment for the classes.",
+      "endpoint": "/api/classes/{class_id}/students/",
+      "method": "GET",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/classes/{class_id}/students/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Instructor"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    },
+    {
+      "_comment": "Instructor 2: etreive current waiting list for the class.",
+      "endpoint": "/api/classes/{class_id}/waitlist/",
+      "method": "GET",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/classes/{class_id}/waitlist/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Instructor"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    },
+    {
+      "_comment": "Instructor 3: Retreive students who have dropped the class.",
+      "endpoint": "/api/classes/{class_id}/droplist/",
+      "method": "GET",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/classes/{class_id}/droplist/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Instructor"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    },
+    {
+      "_comment": "Instructor 4: Drop students administratively.",
+      "endpoint": "/api/enrollment/{class_id}/{student_id}/administratively/",
+      "method": "DELETE",
+      "input_headers": ["x-cwid"],
+      "backend": [
+        {
+          "url_pattern": "/enrollment/{class_id}/{student_id}/administratively/",
+          "host": [
+            "http://localhost:5100",
+            "http://localhost:5101",
+            "http://localhost:5102"
+          ],
+
+          "extra_config": {
+            "backend/http": {
+              "return_error_code": true
+            }
+          }
+        }
+      ],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "roles_key": "roles",
+          "roles": ["Instructor"],
+          "jwk_local_path": "./etc/public_key.json",
+          "disable_jwk_security": true,
+          "operation_debug": true,
+          "propagate_claims": [["jti", "x-cwid"]]
+        }
+      }
+    }
+  ]
+}
