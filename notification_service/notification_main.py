@@ -122,15 +122,6 @@ def subscribe_to_notifications(
     return {"message": "Subscribed successfully to class notifications"}
 
 
-'''# Endpoint to list subscriptions
-@notification_router.get("/students/subscriptions/", status_code=status.HTTP_200_OK, tags=["Student"])
-def list_subscriptions(student_id: int, redis_client: redis.Redis = Depends(get_redis_client)):
-    # Fetch subscriptions from Redis
-    subscriptions = fetch_student_subscriptions(student_id, redis_client)
-    # ...
-
-    return {"subscriptions": subscriptions}'''
-
 @notification_router.get("/students/subscriptions/", status_code=status.HTTP_200_OK, tags=["Student"])
 def list_subscriptions(student_id: int, redis_client: redis.Redis = Depends(get_redis_client)):
     # Pattern for matching student's subscriptions
@@ -154,7 +145,6 @@ def list_subscriptions(student_id: int, redis_client: redis.Redis = Depends(get_
         return {"message": "No subscriptions found for the student."}
 
     return {"subscriptions": subscriptions}
-
 
 
 

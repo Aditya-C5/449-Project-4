@@ -1,8 +1,10 @@
 import boto3
 import redis
 from datetime import datetime, timedelta
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Header
 from boto3.dynamodb.conditions import Key
+from starlette.responses import Response
+import hashlib
 
 from notification_service.email_notification import emit_log
 
@@ -67,6 +69,7 @@ class DynamoDBRedisHelper:
                     email_key = f'notification_{class_id}_{student_id}_email'
                     student_email = self.redis_conn.get(email_key)
                     print(f" [x] {student_email}")
+                    redis_conn.set(f"last-modified_{class_id}", datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT"))
                     if student_email is not None:
                         print(f" [x] {student_email}")
                         emit_log(student_email, class_id)
@@ -74,6 +77,35 @@ class DynamoDBRedisHelper:
 
         return total_enrolled_from_waitlist
 
+    '''def check_last_modified(class_id: int, if_modified_since: str = None):
+        """
+    Checks if the content has been modified since the date provided in the If-Modified-Since header.
+    Updates the last modified timestamp in Redis if not present.
+
+    Args:
+        class_id (int): The ID of the class.
+        if_modified_since (str): The date string from the If-Modified-Since header.
+
+    Returns:
+        Tuple[bool, str]: A tuple containing a boolean indicating whether the content is modified
+                          and the last modified date string.
+    """
+        last_modified_key = f"last-modified_{class_id}"
+        last_modified = redis_conn.get(last_modified_key)
+
+        # If not present in Redis, set to current time
+        if not last_modified:
+            last_modified = datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")
+            redis_conn.set(last_modified_key, last_modified)
+
+        # Compare with the If-Modified-Since header
+        if if_modified_since and last_modified <= if_modified_since:
+            # Content not modified
+            return False, last_modified
+
+        # Content modified
+        return True, last_modified'''
+    
     
     def process_waitlist(self, class_id):
         class_table = self.dynamodb_resource.Table("class_table")

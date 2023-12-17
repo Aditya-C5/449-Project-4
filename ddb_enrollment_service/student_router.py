@@ -1,8 +1,11 @@
 from typing import Annotated
 import boto3
 import botocore
-from fastapi import Depends, HTTPException, Header, Body, status, APIRouter
+from fastapi import Depends, HTTPException, Header, Body, status, APIRouter, Response
 
+from fastapi.responses import JSONResponse
+
+import hashlib
 from notification_service.email_notification import emit_log
 from .db_connection import get_db
 from .ddb_enrollment_schema import *
@@ -139,9 +142,14 @@ def enroll(class_id: Annotated[int, Body(embed=True)],
             waitlist_score = datetime.now().timestamp()
             #redis_conn.zadd(waitlist_key, {student_id: waitlist_score})
             redis_conn.zadd(waitlist_key, {student_id: waitlist_score})
+            
+            # Update TimeStamp for caching
+            redis_conn.set(f"last-modified_{class_id}", datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+            
             print(f"Added student {student_id} to waitlist for class {class_id}")
             return {"message": "Added to waitlist"}
             #raise HTTPException(status_code=200, detail="Added to waitlist")
+            
            
     except botocore.exceptions.ClientError as e:
         print(f"Botocore Client Error: {e}")
@@ -224,6 +232,8 @@ def drop_class(
         # Trigger auto enrollment using the instance
         if ddb_helper_instance.is_auto_enroll_enabled():        
             ddb_helper_instance.enroll_students_from_waitlist([class_id])
+            # Update TimeStamp for caching
+            redis_conn.set(f"last-modified_{class_id}", datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT"))
 
     except botocore.exceptions.ClientError as e:
         raise HTTPException(
@@ -234,11 +244,14 @@ def drop_class(
     return {"detail": "Item deleted successfully"}
 
 
+
+
 @student_router.get("/waitlist/{class_id}/position/")
 def get_current_waitlist_position(
     class_id: int,
     student_id: int = Header(
-        alias="x-cwid", description="A unique ID for students, instructors, and registrars")):
+        alias="x-cwid", description="A unique ID for students, instructors, and registrars"),
+    if_modified_since: str = Header(None)):
     """
     Retrieve waitlist position
 
@@ -250,19 +263,30 @@ def get_current_waitlist_position(
     """
     try:
         redis_conn = redis.Redis(decode_responses=True)
-        waitlist_key = f"waitlist_{class_id}"
+        last_modified = redis_conn.get(f"last-modified_{class_id}")
+        # Use the last-modified value directly since it's a string
+        last_modified = last_modified if last_modified else datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        # Compare with If-Modified-Since header
+        print(last_modified, "First Time")
+        if last_modified <= if_modified_since:
+            return Response(status_code=status.HTTP_304_NOT_MODIFIED)
 
+
+        waitlist_key = f"waitlist_{class_id}"
         waitlist_position = redis_conn.zrank(waitlist_key, student_id)
 
         if waitlist_position is not None:
             waitlist_position += 1  # Adjust for zero-based index
-            return {"class_id": class_id, "waitlist_position": waitlist_position}
+            return JSONResponse(content={"class_id": class_id, "waitlist_position": waitlist_position}, headers={"Last-Modified": last_modified})
+
         else:
             message = f"You are not in the waitlist for class {class_id}"
-            return {"class_id": class_id, "message": message}
+            return JSONResponse(content={"class_id": class_id, "message": message})
 
     except redis.exceptions.RedisError as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving waitlist position: {str(e)}")
+
+
 
 @student_router.delete("/waitlist/{class_id}/")
 def remove_from_waitlist(
@@ -287,7 +311,11 @@ def remove_from_waitlist(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Record Not Found in Redis"
             )
 
+        # Update TimeStamp for caching
+        redis_conn.set(f"last-modified_{class_id}", datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT"))
+        
         return {"detail": "Item deleted successfully"}
 
     except redis.exceptions.RedisError as e:
         raise HTTPException(status_code=500, detail=f"Error removing from waitlist: {str(e)}")
+    
