@@ -10,6 +10,9 @@ Run `sh ./bin/install.sh`.
 ### How to run
 - Run `sh run.sh` to start the services.
 
+
+# OLD
+
 ## Microservice Diagram
 <img src="https://raw.githubusercontent.com/NLTN/Assets/main/StudentEnrollment/APIGateway.svg" height="230">
 
